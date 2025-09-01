@@ -31,12 +31,13 @@ done
         mv "$j" .
       fi
     done
-
-    for j in *.xml_<->
-    do
-      [[ "$j" = (#b)*(.xml(_<->)) ]]
-      mv "$j" "${j/.xml_<->/${match[2]}.xml}"
-      rm -r (^(*.xml))
-    done
   done
+
+  for j in *.xml_<->
+  do
+    [[ "$j" = (#b)*(.xml(_<->)) ]]
+    mv "$j" "${j/.xml_<->/${match[2]}.xml}"
+  done
+
+  rm -r (^(*.xml))
 )

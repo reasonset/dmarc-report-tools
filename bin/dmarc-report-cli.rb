@@ -10,7 +10,7 @@ class DmarcReport
   end
 
   def self.usage
-    abort('dmarc-report-cli.rb [-O summary|stream|sourceip|domain|from|json] [-d <domain>] <reports_directory>')
+    abort('dmarc-report-cli.rb [-C] [-O summary|stream|sourceip|domain|from|json] [-d <domain>] <reports_directory>')
   end
 
   def initialize
@@ -18,6 +18,7 @@ class DmarcReport
     op = OptionParser.new
     op.on("-O FMT", "--output-format")
     op.on("-d DOMAIN", "--domain")
+    op.on("-C", "--nocolor")
     op.parse!(ARGV, into: @opts)
     @dir = ARGV.shift
     DmarcReport.usage unless File.directory? @dir
@@ -44,7 +45,7 @@ class DmarcReport
   end
 
   def parse
-    entities = Dir.children(@dir)
+    entities = Dir.children(@dir).sort_by {|i| i.split('!')[2].to_i }
     entities.each do |fn|
       begin
         xml = File.read(File.join(@dir, fn))
@@ -241,22 +242,27 @@ class DmarcReport
   end
 
   def color_red str
+    return str if @opts[:nocolor]
     "\e[31m#{str}\e[0m"
   end
 
   def color_mag str
+    return str if @opts[:nocolor]
     "\e[35m#{str}\e[0m"
   end
 
   def color_yel str
+    return str if @opts[:nocolor]
     "\e[33m#{str}\e[0m"
   end
 
   def color_grn str
+    return str if @opts[:nocolor]
     "\e[32m#{str}\e[0m"
   end
 
   def color_blu str
+    return str if @opts[:nocolor]
     "\e[36m#{str}\e[0m"
   end
 

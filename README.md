@@ -31,7 +31,7 @@ dmarc-extract-xmls.zsh <mail_directory> <dest_directory>
 ### Analyze DMARC XMLs
 
 ```
-dmarc-report-cli.rb [-O summary|stream|sourceip|domain|from|json] [-d <domain>] <reports_directory>
+dmarc-report-cli.rb [-C] [-O summary|stream|sourceip|domain|from|json] [-d <domain>] <reports_directory>
 ```
 
 This CLI tool reads DMARC XML files from a specified directory and outputs analysis results in various formats.  
@@ -40,6 +40,10 @@ Most output formats use ANSI color and are intended for terminal display.
 `<reports_directory>` should contain DMARC XML files extracted from email reports.
 
 The tool will parse all files in the directory and generate output based on the selected format.
+
+#### No color (`-C` / `--nocolor`)
+
+Disable ANSI color escape sequence in output.
 
 #### Output Formats (`-O` / `--output-formats`)
 
