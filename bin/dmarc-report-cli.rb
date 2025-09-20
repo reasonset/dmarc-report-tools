@@ -37,6 +37,8 @@ class DmarcReport
       domain_count
     when "from"
       domain_header_from
+    when "passed"
+      passed_detail
     when "json"
       json
     else
@@ -50,11 +52,11 @@ class DmarcReport
       begin
         xml = File.read(File.join(@dir, fn))
         doc = Nokogiri::XML(xml)
-    
+
         org = doc.at_xpath("feedback/report_metadata/org_name").text
         date_begin = doc.at_xpath("feedback/report_metadata/date_range/begin").text
         date_end = doc.at_xpath("feedback/report_metadata/date_range/end").text
-    
+
         policy = {}
         policy[:domain] = doc.at_xpath("feedback/policy_published/domain")&.text || ""
         policy[:adkim] = doc.at_xpath("feedback/policy_published/adkim")&.text || ""
@@ -92,8 +94,9 @@ class DmarcReport
           }
           records.push r
         end
-    
+
         data = {
+          filename: fn,
           report_meta: {
             org:,
             date: {
@@ -123,7 +126,7 @@ class DmarcReport
       report[:records].each do |record|
         dkim_passed = record[:row][:dkim]
         spf_passed = record[:row][:spf]
-        dmarc_passed = dkim_passed | spf_passed
+        dmarc_passed = record[:row][:disp] != "reject" && (dkim_passed | spf_passed)
         num = record[:count]
         dkim[dkim_passed ? :pass : :fail] += num
         spf[spf_passed ? :pass : :fail] += num
@@ -158,7 +161,7 @@ class DmarcReport
     @reports.each do |report|
       org = sprintf "%16.16s", report[:report_meta][:org]
       report[:records].each do |record|
-        dmarc_passed = record[:row][:spf] | record[:row][:dkim]
+        dmarc_passed = record[:row][:disp] != "reject" && (record[:row][:spf] | record[:row][:dkim])
         printf "%s %24.24s %2s %2s %10s %d %s\n", (dmarc_passed ? color_grn(org) : color_red(org)), record[:id].join(","), (record[:row][:spf] ? color_grn("Sp") : color_red("Sf")), (record[:row][:dkim] ? color_grn("Dp") : color_red("Df")), color_disposition(record[:row][:disp]), record[:count], record[:ip]
       end
     end
@@ -169,7 +172,7 @@ class DmarcReport
 
     @reports.each do |report|
       report[:records].each do |record|
-        dmarc_passed = record[:row][:spf] | record[:row][:dkim]
+        dmarc_passed = record[:row][:disp] != "reject" && (record[:row][:spf] | record[:row][:dkim])
         num = record[:count]
         ip_addr[dmarc_passed ? :pass : :fail][record[:ip]] += num
       end
@@ -187,7 +190,7 @@ class DmarcReport
     volume_total = 0
     @reports.each do |report|
       report[:records].each do |record|
-        dmarc_passed = record[:row][:spf] | record[:row][:dkim]
+        dmarc_passed = record[:row][:disp] != "reject" && (record[:row][:spf] | record[:row][:dkim])
         domain = report[:policy][:domain]
         domains[domain] ||= {pass: 0, fail:0}
         num = record[:count]
@@ -206,7 +209,7 @@ class DmarcReport
     volume_total = 0
     @reports.each do |report|
       report[:records].each do |record|
-        dmarc_passed = record[:row][:spf] | record[:row][:dkim]
+        dmarc_passed = record[:row][:disp] != "reject" && (record[:row][:spf] | record[:row][:dkim])
         domain = report[:policy][:domain]
         domains[domain] ||= {}
         num = record[:count]
@@ -225,6 +228,21 @@ class DmarcReport
         printf("%s %s %s %.2f%%\n", k, color_grn(v[:pass]), color_red(v[:fail]), (v[:pass].to_f / volume_total * 100))
       end
       puts
+    end
+  end
+
+  def passed_detail
+    require 'yaml'
+    @reports.each do |report|
+      report[:records].each do |record|
+        dmarc_passed = record[:row][:disp] != "reject" && (record[:row][:spf] | record[:row][:dkim])
+        if dmarc_passed
+          printf("%s [%s - %s]\n", report[:filename], report[:report_meta][:date][:begin].strftime("%Y-%m-%d %H:%M:%S"), report[:report_meta][:date][:end].strftime("%Y-%m-%d %H:%M:%S"))
+          printf("Reported from %s\n", report[:report_meta][:org])
+          YAML.dump record, $stdout, stringify_names: true
+          puts
+        end
+      end
     end
   end
 

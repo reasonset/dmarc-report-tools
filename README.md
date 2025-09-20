@@ -82,6 +82,10 @@ Useful for identifying which domains are frequently impersonated or misconfigure
 Aggregates pass/fail counts per `header_from` value, grouped by domain.  
 Helps detect spoofing patterns or misaligned senders.
 
+##### `passed`
+
+Displays passed records detail.
+
 ##### `json`
 
 Outputs the aggregated data in structured JSON format.  
